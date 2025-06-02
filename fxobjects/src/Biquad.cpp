@@ -1,4 +1,6 @@
-#include "Biquad.h"
+#include "include/Biquad.h"
+
+using namespace fxobjects;
 
 double Biquad::getS_value()
 {

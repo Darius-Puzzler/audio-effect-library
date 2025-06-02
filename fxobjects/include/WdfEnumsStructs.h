@@ -12,6 +12,8 @@ Use this strongly typed enum to easily set the wdfComponent type
 \date Date : 2018 / 09 / 7
 */
 
+#pragma once
+
 namespace fxobjects {
 
 	enum class wdfComponent {
@@ -60,5 +62,28 @@ namespace fxobjects {
 		double L = 0.0;	///< value of L component
 		double C = 0.0;	///< value of C component
 		wdfComponent componentType = wdfComponent::R; ///< selected component type
+	};
+	
+	struct WDFParameters
+	{
+		WDFParameters() {}
+		/** all FXObjects parameter objects require overloaded= operator so remember to add new entries if you add new variables. */
+		WDFParameters& operator=(const WDFParameters& params)
+		{
+			if (this == &params)
+				return *this;
+
+			fc = params.fc;
+			Q = params.Q;
+			boostCut_dB = params.boostCut_dB;
+			frequencyWarping = params.frequencyWarping;
+			return *this;
+		}
+
+		// --- individual parameters
+		double fc = 100.0;				///< filter fc
+		double Q = 0.707;				///< filter Q
+		double boostCut_dB = 0.0;		///< filter boost or cut in dB
+		bool frequencyWarping = true;	///< enable frequency warping
 	};
 } // namespace fxobjects

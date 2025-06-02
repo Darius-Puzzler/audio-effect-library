@@ -35,8 +35,8 @@ audio-filter-library/
 ## Usage
 1. Include the headers in your project:
 ```cpp
-#include "fxobjects/AudioFilter.h"
-#include "fxobjects/Biquad.h"
+#include "fxobjects/include/AudioFilter.h"
+#include "fxobjects/include/Biquad.h"
 ```
 
 2. Create and use filters:

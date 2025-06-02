@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cmath>
 #include "Constants.h"
+#include "WdfEnumsStructs.h"
 
 namespace fxobjects {
 
@@ -18,6 +19,10 @@ namespace fxobjects {
 	
 		/** process one sample in and out */
 		virtual double processAudioSample(double xn) = 0;
+
+		/**	added for filter object switching in WDFIdealRLC Example,
+			using a pointer to base class IAudioSignalProcessor */
+		virtual void setParameters(const WDFParameters& _wdfParameters) = 0;
 	
 		/** return true if the derived object can process a frame, false otherwise */
 		virtual bool canProcessAudioFrame() = 0;

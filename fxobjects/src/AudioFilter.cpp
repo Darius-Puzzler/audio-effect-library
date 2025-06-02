@@ -1,5 +1,7 @@
-#include "AudioFilter.h"
-#include "Constants.h"
+#include "include/AudioFilter.h"
+#include "include/Constants.h"
+
+using namespace fxobjects;
 
 // --- returns true if coeffs were updated
 bool AudioFilter::calculateFilterCoeffs()
