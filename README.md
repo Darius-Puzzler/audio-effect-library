@@ -18,16 +18,30 @@ A C++ audio filter library based on concepts from Will Pirkle's "Designing Audio
 
 ## Structure
 ```
-audio-filter-library/
-├── include/
-│   └── fxobjects/
-│       ├── AudioFilter.h     # Main filter class
-│       ├── Biquad.h          # Biquad implementation
-│       ├── EnumsAndStructs.h # Constants and parameter structures
-│       ├── IAudioSignalProcessor.h # Base interface
-│       └── Constants.h       # Mathematical constants
-└── src/
-    └── fxobjects/
+audio-effect-library/
+├── examples/                           # Example implementations
+│   └── IPlugWDFIdealRLC/            # Example plugin with WDF RLC filters
+│       ├── IPlugWDFIdealRLC.h/cpp    # Main plugin files
+│       ├── WDFIdealRLCBPF.h          # Band Pass Filter
+│       ├── WDFIdealRLCBSF.h          # Band Stop Filter
+│       ├── WDFIdealRLCHPF.h          # High Pass Filter
+│       └── WDFIdealRLCLPF.h          # Low Pass Filter
+└── fxobjects/                        # Core library
+    ├── include/                      # Header files
+    │   ├── AudioFilter.h             # Main filter class
+    │   ├── Biquad.h                  # Biquad implementation
+    │   ├── Constants.h               # Mathematical constants
+    │   ├── EnumsAndStructs.h         # Constants and parameter structures
+    │   ├── IAudioSignalProcessor.h   # Base interface
+    │   ├── IComponentAdaptor.h       # Interface for WDF components
+    │   ├── WdfAdaptorBase.h          # Base class for WDF adaptors
+    │   ├── WdfCapacitor.h            # Capacitor component
+    │   ├── WdfEnumsStructs.h         # WDF-specific enums and structs
+    │   ├── WdfInductor.h             # Inductor component
+    │   ├── WdfParallel*.h            # Parallel circuit components
+    │   ├── WdfResistor.h             # Resistor component
+    │   └── WdfSeries*.h              # Series circuit components
+    └── src/                          # Implementation files
         ├── AudioFilter.cpp
         └── Biquad.cpp
 ```
