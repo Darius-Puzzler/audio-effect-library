@@ -22,7 +22,7 @@ namespace fxobjects {
 
 		/**	added for filter object switching in WDFIdealRLC Example,
 			using a pointer to base class IAudioSignalProcessor */
-		virtual void setParameters(const WDFParameters& _wdfParameters) = 0;
+		virtual void setParameters(const WDFParameters& _wdfParameters) {}
 	
 		/** return true if the derived object can process a frame, false otherwise */
 		virtual bool canProcessAudioFrame() = 0;
@@ -54,20 +54,4 @@ namespace fxobjects {
 			return false; // NOT handled
 		}
 	};
-	
-	inline bool checkFloatUnderflow(double& value)
-	{
-		bool retValue = false;
-		if (value > 0.0 && value < kSmallestPositiveFloatValue)
-		{
-			value = 0;
-			retValue = true;
-		}
-		else if (value < 0.0 && value > kSmallestNegativeFloatValue)
-		{
-			value = 0;
-			retValue = true;
-		}
-		return retValue;
-	}
 } // namespace fxobjects
