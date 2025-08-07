@@ -1,25 +1,31 @@
-/*
-*   Implement the analog modeling delay in Figure 14.15.
-* 
-*   Analog delays using the Bucket Brigade Delay ICs (BBDs) are popular for their organic sounds.
-    Contrary to the name, analog delays include a sample-and-hold along with an anti-aliasing low-pass
-    filter, and they sample the input, chopping it into pieces. The “analog” part is that instead of digital
-    numeric values, analog charges are stored and delayed using a system of switches and capacitors,
-    which pass the analog voltage slices along in the same way as a bucket brigade passes buckets of water
-    for fire-fighting. Most of these analog devices also include a compander (complimentary compression
-    and expansion) around the BBD since these ICs are limited in dynamic range: the signal is compressed
-    going into the BBD, and then expanded coming out (note that this is true upward expansion).
-    
-    The filtering, companding and generally noisy operation of the BBD ICs contributes to this organic sound.
-    The most obvious audible effect is that as the echoes are fed back into the BBD, they come back out
-    slightly noisier, and with slightly less high frequency content. To mimic the loss of high frequencies
-    with each lap around the feedback path, we place a low-pass filter in it, either before or after the
-    feedback attenuation coefficient. Make sure you do not use a resonant low-pass filter or one with any
-    gain above 0.0 dB as this will cause the feedback loop to become unstable. Figure 14.15 shows what
-    a basic analog modeling delay algorithm might look like. Improvements would include the addition
-    of a compander around the delay line and an injection of noise (perhaps EQ’d to model a specific tape
-    noise) into the delay line.
-*/
+/**
+ * @file AnalogModelingDelay.h
+ * @brief Implementation of an analog modeling delay effect using BBD (Bucket Brigade Device) emulation
+ * 
+ * @details
+ * This class implements an analog modeling delay that emulates the characteristics of
+ * Bucket Brigade Delay (BBD) integrated circuits. These circuits were commonly used in
+ * vintage analog delay units and are known for their warm, organic sound characteristics.
+ * 
+ * The implementation models several key aspects of BBD behavior:
+ * - Sample-and-hold behavior with anti-aliasing low-pass filtering
+ * - High-frequency loss in the feedback path
+ * - Non-linearities and noise characteristics of analog components
+ * 
+ * The analog modeling is achieved through:
+ * 1. A low-pass filter in the feedback path to simulate high-frequency roll-off
+ * 2. Careful emulation of the BBD's non-linear characteristics
+ * 3. Proper handling of feedback and wet/dry mixing
+ * 
+ * @note The current implementation includes a basic low-pass filter in the feedback path.
+ * Future improvements could include:
+ * - A compander section for more accurate BBD emulation
+ * - Noise injection to model BBD noise characteristics
+ * - More sophisticated filtering to match specific BBD IC responses
+ * 
+ * @see AudioDelay.h
+ * @see AudioFilter.h
+ */
 
 #pragma once
 #include "include/AudioDelay.h"
@@ -36,27 +42,38 @@ namespace fxobjects
         ~AnalogModelingDelay() {}	/* D-TOR */
 
     public:
-        /** reset members to initialized state */
+        /**
+         * @brief Reset the delay effect to its initial state
+         * 
+         * @details
+         * Initializes or reinitializes the delay buffers and filter based on the current sample rate.
+         * If the sample rate hasn't changed, it simply flushes the existing buffers. Otherwise, it
+         * recreates the delay buffers and reinitializes the low-pass filter with the new sample rate.
+         * 
+         * @param _sampleRate The current audio sample rate in Hz
+         * @return bool True if reset was successful, false otherwise
+         * 
+         * @note The low-pass filter is configured with a first-order low-pass response (12dB/octave)
+         * and the cutoff frequency defined by CUTOFF (3000Hz by default).
+         */
         virtual bool reset(double _sampleRate)
         {
-            // --- if sample rate did not change
+            // If sample rate hasn't changed, just flush buffers
             if (sampleRate == _sampleRate)
             {
-                // --- just flush buffer and return
                 delayBuffer_L.flushBuffer();
                 delayBuffer_R.flushBuffer();
                 return true;
             }
 
-            // --- create new buffer, will store sample rate and length(mSec)
+            // Recreate delay buffers with new sample rate
             createDelayBuffers(_sampleRate, bufferLength_mSec);
 
-            // reset the LP filter
-
+            // Reinitialize the low-pass filter for analog modeling
             mAudioFilter.reset(_sampleRate);
             mAudioFilterParameters.algorithm = filterAlgorithm::kLPF1;
             mAudioFilterParameters.fc = CUTOFF;
-            mAudioFilter.setParameters(mAudioFilterParameters); // this calls also calculateFilterCoeffs();
+            mAudioFilter.setParameters(mAudioFilterParameters); // Updates filter coefficients
 
             return true;
         }
@@ -228,98 +245,98 @@ namespace fxobjects
             delayBuffer_R.createCircularBuffer(bufferLength);
         }
 
-        // process a block and call the Low Pass Filter processblock after
-        // only this processBlock is used to process the delay
+        /**
+         * @brief Process a block of audio samples through the analog modeling delay
+         * 
+         * @details
+         * Processes a block of audio samples through the delay line with analog modeling.
+         * Supports both mono and stereo processing, with different algorithms for normal
+         * and ping-pong delay modes. The analog modeling is applied in the feedback path
+         * using a low-pass filter to simulate BBD characteristics.
+         * 
+         * @param inputs Array of input sample buffers (one per channel)
+         * @param outputs Array of output sample buffers (one per channel)
+         * @param numChannels Number of channels to process (1 for mono, 2 for stereo)
+         * @param nFrames Number of audio frames to process
+         * 
+         * @note For mono processing, only the left channel is processed. For stereo processing,
+         *       the effect supports both normal (separate L/R delays) and ping-pong (crossed
+         *       feedback) modes. The analog modeling filter is applied to the feedback path
+         *       to simulate the high-frequency loss characteristic of BBD devices.
+         */
         void processBlock(iplug::sample** inputs, iplug::sample** outputs, int numChannels, int nFrames)
         {
-            // --- make sure we have input and outputs
+            // Return early if no channels to process
             if (numChannels == 0)
                 return;
 
-            // --- make sure we support this delay algorithm
+            // Validate delay algorithm
             if (parameters.algorithm != delayAlgorithm::kNormal &&
                 parameters.algorithm != delayAlgorithm::kPingPong)
                 return;
 
-            // --- if only one output channel, revert to mono operation
+            // Process mono signal
             if (numChannels == 1)
             {
                 for (int s = 0; s < nFrames; s++)
                 {
-                    // --- read delay
+                    // Read from delay line
                     double yn = delayBuffer_L.readBuffer(delayInSamples_L);
 
-                    // analog modeling L
+                    // Apply analog modeling (low-pass filtering)
                     double yMod = mAudioFilter.processAudioSample(yn);
 
-                    // --- create input for delay buffer
-                    double dn = inputs[0][s] + (parameters.leftFeedback_Pct / 100.0) * yMod; // use left feedback for mono processing
+                    // Create feedback signal
+                    double dn = inputs[0][s] + (parameters.leftFeedback_Pct / 100.0) * yMod;
 
-                    // --- write to delay buffer
+                    // Write to delay line
                     delayBuffer_L.writeBuffer(dn);
 
-                    // --- form mixture out = dry*xn + wet*yn
+                    // Mix dry and wet signals
                     outputs[0][s] = dryMix * inputs[0][s] + wetMix * yn;
                 }
                 return;
             }
 
-            // --- if we get here we know we have 2 output channels
-            //
-            // --- 
+            // Process stereo signal
             for (int s = 0; s < nFrames; s++)
             {
+                // Get input samples (duplicate left channel if mono input)
                 double xnL = inputs[0][s];
-
-                // --- RIGHT channel (duplicate left input if mono-in)
                 double xnR = numChannels > 1 ? inputs[1][s] : xnL;
 
-                // --- read delay LEFT
+                // Read from delay lines
                 double ynL = delayBuffer_L.readBuffer(delayInSamples_L);
-
-                // --- read delay RIGHT
                 double ynR = delayBuffer_R.readBuffer(delayInSamples_R);
                 
-                // analog modeling L
+                // Apply analog modeling to both channels
                 double yModL = mAudioFilter.processAudioSample(ynL);
-                
-                // analog modeling R
                 double yModR = mAudioFilter.processAudioSample(ynR);
 
-                // --- create input for delay buffer with LEFT channel info
+                // Create feedback signals
                 double dnL = xnL + (parameters.leftFeedback_Pct / 100.0) * yModL;
-
-                // --- create input for delay buffer with RIGHT channel info
                 double dnR = xnR + (parameters.rightFeedback_Pct / 100.0) * yModR;
 
-                // --- decode
+                // Process based on delay algorithm
                 if (parameters.algorithm == delayAlgorithm::kNormal)
                 {
-                    // --- write to LEFT delay buffer with LEFT channel info
+                    // Standard stereo delay
                     delayBuffer_L.writeBuffer(dnL);
-
-                    // --- write to RIGHT delay buffer with RIGHT channel info
                     delayBuffer_R.writeBuffer(dnR);
                 }
                 else if (parameters.algorithm == delayAlgorithm::kPingPong)
                 {
-                    // --- write to LEFT delay buffer with RIGHT channel info
+                    // Crossed feedback for ping-pong effect
                     delayBuffer_L.writeBuffer(dnR);
-
-                    // --- write to RIGHT delay buffer with LEFT channel info
                     delayBuffer_R.writeBuffer(dnL);
                 }
 
-                // --- form mixture out = dry*xn + wet*yn
+                // Mix dry and wet signals
                 double outputL = dryMix * xnL + wetMix * ynL;
-
-                // --- form mixture out = dry*xn + wet*yn
                 double outputR = dryMix * xnR + wetMix * ynR;
 
-                // --- set left channel
+                // Write to output buffers
                 outputs[0][s] = (iplug::sample)outputL;
-
-                // --- set right channel
                 outputs[1][s] = (iplug::sample)outputR;
             }
         }
@@ -341,7 +358,7 @@ namespace fxobjects
         CircularBuffer<double> delayBuffer_R;	///< RIGHT delay buffer of doubles
 
         // (Low Pass) Filter for Analog Modeling
-        AudioFilter mAudioFilter;
-        AudioFilterParameters mAudioFilterParameters;
+        AudioFilter mAudioFilter;                     ///< Low-pass filter for analog modeling in feedback path
+        AudioFilterParameters mAudioFilterParameters;  ///< Configuration parameters for the analog modeling filter
     };
 } // namespace fxobjects
