@@ -1,4 +1,5 @@
 #include "include/Biquad.h"
+#include "include/helperfunctions.h"
 
 using namespace fxobjects;
 

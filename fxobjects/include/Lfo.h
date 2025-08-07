@@ -124,12 +124,45 @@ namespace fxobjects
             // --- setup for next sample period
             advanceModulo(modCounter, phaseInc);
 
-            return output;
+            // homework chapter 13 - 1
+            // all outputs scaled by lfoParameters.amplitude_fac to set lfo amplitude [0.0, +1.0]
+            // convert first, scale after or output values will be wrong
+            // scaling using lambda function
+            auto scaleOutputs = [&]() {
+                output.normalOutput *= lfoParameters.amplitude_fac;
+                output.invertedOutput *= lfoParameters.amplitude_fac;
+                output.quadPhaseOutput_pos *= lfoParameters.amplitude_fac;
+                output.quadPhaseOutput_neg *= lfoParameters.amplitude_fac;
+            };
+
+            if (polarity == Polarity::kUnipolar)
+            {
+                output.normalOutput = bipolarToUnipolar(output.normalOutput);
+                output.invertedOutput = bipolarToUnipolar(output.invertedOutput);
+                output.quadPhaseOutput_pos = bipolarToUnipolar(output.quadPhaseOutput_pos);
+                output.quadPhaseOutput_neg = bipolarToUnipolar(output.quadPhaseOutput_neg);
+
+                scaleOutputs();
+
+                return output;
+            }
+            else
+            {
+                scaleOutputs();
+
+                return output;
+
+            }
         }
-    
+        
+        void setPolarity(Polarity _polarity)
+        {
+            polarity = _polarity;
+        }
+        
     protected:
         // --- parameters
-        OscillatorParameters lfoParameters; ///< obejcgt parameters
+        OscillatorParameters lfoParameters; ///< object parameters
     
         // --- sample rate
         double sampleRate = 0.0;			///< sample rate
@@ -138,6 +171,10 @@ namespace fxobjects
         double modCounter = 0.0;			///< modulo counter [0.0, +1.0]
         double phaseInc = 0.0;				///< phase inc = fo/fs
         double modCounterQP = 0.25;			///<Quad Phase modulo counter [0.0, +1.0]
+
+        // homework chapter 13-2
+        Polarity polarity = Polarity::kUnipolar; // hard coded unipolar
+
     
         /** check the modulo counter and wrap if needed */
         inline bool checkAndWrapModulo(double& moduloCounter, double phaseInc)

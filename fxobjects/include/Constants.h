@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 namespace fxobjects {
     
@@ -34,6 +35,48 @@ namespace fxobjects {
 
 	const float ENVELOPE_DIGITAL_TC = -4.6051701859880913680359829093687;///< ln(1%)
 	const float ENVELOPE_ANALOG_TC = -1.0023934309275667804345424248947; ///< ln(36.7%)
+
+	// --- constants for Phaser
+	const unsigned int PHASER_STAGES = 6;
+
+	// --- these are the ideal band definitions
+	//const double apf0_minF = 16.0;
+	//const double apf0_maxF = 1600.0;
+	//
+	//const double apf1_minF = 33.0;
+	//const double apf1_maxF = 3300.0;
+	//
+	//const double apf2_minF = 48.0;
+	//const double apf2_maxF = 4800.0;
+	//
+	//const double apf3_minF = 98.0;
+	//const double apf3_maxF = 9800.0;
+	//
+	//const double apf4_minF = 160.0;
+	//const double apf4_maxF = 16000.0;
+	//
+	//const double apf5_minF = 260.0;
+	//const double apf5_maxF = 20480.0;
+
+	// --- these are the exact values from the National Semiconductor Phaser design
+	const double apf0_minF = 32.0;
+	const double apf0_maxF = 1500.0;
+
+	const double apf1_minF = 68.0;
+	const double apf1_maxF = 3400.0;
+
+	const double apf2_minF = 96.0;
+	const double apf2_maxF = 4800.0;
+
+	const double apf3_minF = 212.0;
+	const double apf3_maxF = 10000.0;
+
+	const double apf4_minF = 320.0;
+	const double apf4_maxF = 16000.0;
+
+	const double apf5_minF = 636.0;
+	const double apf5_maxF = 20480.0;
+
 	/** @} */
 
 	/** @GUITiming
